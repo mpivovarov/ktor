@@ -8,6 +8,12 @@ buildscript {
     }
 }
 
+plugins {
+    id 'nu.studer.jooq' version '4.2'
+}
+
+
+apply plugin: 'java'
 apply plugin: 'kotlin'
 apply plugin: 'application'
 
@@ -29,6 +35,12 @@ repositories {
 }
 
 dependencies {
+    implementation "org.jooq:jooq-codegen:$jooq_version"
+    implementation "org.jooq:jooq:$jooq_version"
+    implementation "org.jooq:jooq-meta:$jooq_version"
+    implementation "com.zaxxer:HikariCP:3.4.3"
+    implementation "javax.persistence:javax.persistence-api:2.2"
+    implementation "org.postgresql:postgresql:42.2.12"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "io.ktor:ktor-server-netty:$ktor_version"
     implementation "io.ktor:ktor-server-jetty:$ktor_version"
@@ -41,5 +53,39 @@ dependencies {
     implementation "io.ktor:ktor-auth-jwt:$ktor_version"
     implementation "io.ktor:ktor-jackson:$ktor_version"
     implementation "io.ktor:ktor-locations:$ktor_version"
+    implementation 'org.kodein.di:kodein-di-generic-jvm:5.2.0'
     testImplementation "io.ktor:ktor-server-tests:$ktor_version"
+    jooqRuntime 'org.postgresql:postgresql:42.2.12'
+}
+
+jooq {
+    sample(sourceSets.main) {
+        jdbc {
+            driver = 'org.postgresql.Driver'
+            url = 'jdbc:postgresql://localhost:5432/postgres?currentSchema=ktor'
+            user = 'postgres'
+            password = 'postgres'
+        }
+        generator {
+            name = 'org.jooq.codegen.DefaultGenerator'
+            strategy {
+                name = 'org.jooq.codegen.DefaultGeneratorStrategy'
+            }
+            database {
+                name = 'org.jooq.meta.postgres.PostgresDatabase'
+                inputSchema = 'ktor'
+            }
+            generate {
+                relations = true
+                deprecated = false
+                records = true
+                immutablePojos = false
+                fluentSetters = true
+            }
+            target {
+                packageName = 'generated'
+                directory = 'src'
+            }
+        }
+    }
 }

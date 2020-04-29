@@ -1,52 +1,81 @@
 package my.ktor
 
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import io.ktor.application.Application
+import io.ktor.application.call
 import io.ktor.application.install
-import io.ktor.auth.Authentication
 import io.ktor.features.ContentNegotiation
 import io.ktor.jackson.jackson
-import io.ktor.sessions.Sessions
-import io.ktor.sessions.cookie
-import my.ktor.route.Route.routes
-import kotlin.collections.set
+import io.ktor.locations.Locations
+import io.ktor.response.respond
+import io.ktor.routing.get
+import io.ktor.routing.route
+import io.ktor.routing.routing
+import my.ktor.dao.Datasource
+import my.ktor.dao.NewsDAO
+import my.ktor.route.newsAdminHandler
+import my.ktor.route.newsHandler
+import org.kodein.di.Kodein
+import org.kodein.di.generic.bind
+import org.kodein.di.generic.singleton
 
 fun main(args: Array<String>): Unit = io.ktor.server.jetty.EngineMain.main(args)
 
-@Suppress("unused") // Referenced in application.conf
-@kotlin.jvm.JvmOverloads
-fun Application.module(testing: Boolean = false) {
-    install(Sessions) {
-        cookie<MySession>("MY_SESSION") {
-            cookie.extensions["SameSite"] = "lax"
-        }
-    }
 
-//    install(CORS) {
-//        method(HttpMethod.Options)
-//        method(HttpMethod.Put)
-//        method(HttpMethod.Delete)
-//        method(HttpMethod.Patch)
-//        header(HttpHeaders.Authorization)
-//        header("MyCustomHeader")
-//        allowCredentials = true
-//        anyHost() // @TODO: Don't do this in production if possible. Try to limit it.
+@kotlin.jvm.JvmOverloads
+fun Application.module() {
+    val dbConf: Config = ConfigFactory.load()
+    val ds = Datasource.build(dbConf)
+
+    module(Kodein {
+        bind<NewsDAO>() with singleton { NewsDAO(ds) }
+    })
+
+}
+
+fun Application.module(kodein: Kodein) {
+//    install(Authentication) {
+//        basic("name") {
+//            realm = "ktor"
+//            validate { credentials ->
+//                if (credentials.password == "password") UserIdPrincipal(credentials.name) else null
+//            }
+//        }
+////        val jwtVerifier = makeJwtVerifier("testIssuer", "testAudience")
+////        jwt {
+////            verifier(jwtVerifier)
+////            validate { credential ->
+////                if (credential.payload.audience.contains("testAudience"))
+////                    JWTPrincipal(credential.payload)
+////                else
+////                    null
+////            }
+////        }
 //    }
 
-//    install(DataConversion)
-
-    install(Authentication) {
-    }
-
+    install(Locations)
     install(ContentNegotiation) {
         jackson {
             enable(SerializationFeature.INDENT_OUTPUT)
         }
     }
 
-    routes()
+    routing {
+        get("/") {
+            call.respond("index")
+        }
+        route("api") {
+            route("v1") {
+                newsHandler(kodein)
+//                authenticate {
+                    route("admin") {
+                        newsAdminHandler(kodein)
+                    }
+//                }
+            }
+        }
+    }
 }
-
-
-data class MySession(val count: Int = 0)
 
