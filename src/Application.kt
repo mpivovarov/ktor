@@ -7,6 +7,8 @@ import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
+import io.ktor.features.StatusPages
+import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.jackson
 import io.ktor.locations.Locations
 import io.ktor.response.respond
@@ -59,6 +61,18 @@ fun Application.module(kodein: Kodein) {
     install(ContentNegotiation) {
         jackson {
             enable(SerializationFeature.INDENT_OUTPUT)
+        }
+    }
+    install(StatusPages) {
+//        exception<AuthenticationException> { cause ->
+//            call.respond(HttpStatusCode.Unauthorized)
+//        }
+//        exception<AuthorizationException> { cause ->
+//            call.respond(HttpStatusCode.Forbidden)
+//        }
+        exception<Throwable> { cause ->
+            // dummy
+            call.respond(HttpStatusCode.InternalServerError, message = cause.message?:"")
         }
     }
 
