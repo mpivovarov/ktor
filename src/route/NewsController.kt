@@ -62,14 +62,16 @@ fun Route.newsAdminHandler(kodein: Kodein) {
     }
 
     get<NewsGenLoc> { dto ->
-        val gen = launch { generateNews(dto.count, dao) }
+        println("main thread ${Thread.currentThread().name}")
+        launch(execPool) { generateNews(dto.count, dao) }
         call.respond(SuccessResponse("generated"))
     }
 
 }
 
-private suspend fun generateNews(count: Int, dao: NewsDAO) = withContext(execPool) {
+private fun generateNews(count: Int, dao: NewsDAO)  {
     println("begin generate")
+    println("gen thread ${Thread.currentThread().name}")
     (1..count).forEach {
         dao.create(News(null, Instant.now(), UUID.randomUUID().toString(), UUID.randomUUID().toString()))
     }

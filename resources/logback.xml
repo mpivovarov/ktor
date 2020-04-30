@@ -9,4 +9,5 @@
     </root>
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="com.zaxxer.hikari" level="INFO"/>
+    <logger name="org.jooq" level="INFO"/>
 </configuration>
