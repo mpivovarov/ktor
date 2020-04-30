@@ -6,6 +6,10 @@ import com.typesafe.config.ConfigFactory
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
+import io.ktor.auth.Authentication
+import io.ktor.auth.authenticate
+import io.ktor.auth.jwt.JWTPrincipal
+import io.ktor.auth.jwt.jwt
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.StatusPages
 import io.ktor.http.HttpStatusCode
@@ -19,6 +23,7 @@ import my.ktor.dao.Datasource
 import my.ktor.dao.NewsDAO
 import my.ktor.route.newsAdminHandler
 import my.ktor.route.newsHandler
+import my.ktor.security.makeJwtVerifier
 import org.kodein.di.Kodein
 import org.kodein.di.generic.bind
 import org.kodein.di.generic.singleton
@@ -38,24 +43,16 @@ fun Application.module() {
 }
 
 fun Application.module(kodein: Kodein) {
-//    install(Authentication) {
-//        basic("name") {
-//            realm = "ktor"
-//            validate { credentials ->
-//                if (credentials.password == "password") UserIdPrincipal(credentials.name) else null
-//            }
-//        }
-////        val jwtVerifier = makeJwtVerifier("testIssuer", "testAudience")
-////        jwt {
-////            verifier(jwtVerifier)
-////            validate { credential ->
-////                if (credential.payload.audience.contains("testAudience"))
-////                    JWTPrincipal(credential.payload)
-////                else
-////                    null
-////            }
-////        }
-//    }
+    install(Authentication) {
+        val jwtVerifier = makeJwtVerifier()
+        jwt {
+            verifier(jwtVerifier)
+            validate { credential ->
+                // TODO any jwt token applied, with no verifiaction. Just for tests
+                JWTPrincipal(credential.payload)
+            }
+        }
+    }
 
     install(Locations)
     install(ContentNegotiation) {
@@ -83,11 +80,11 @@ fun Application.module(kodein: Kodein) {
         route("api") {
             route("v1") {
                 newsHandler(kodein)
-//                authenticate {
+                authenticate {
                     route("admin") {
                         newsAdminHandler(kodein)
                     }
-//                }
+                }
             }
         }
     }
