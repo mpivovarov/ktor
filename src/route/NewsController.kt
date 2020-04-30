@@ -22,9 +22,9 @@ import java.util.concurrent.Executors
 @Location("/news/{id}") data class NewsIdLoc(val id: Long)
 @Location("/news/generate/{count}") data class NewsGenLoc(val count: Int)
 
-//val execPool: ExecutorCoroutineDispatcher by lazy {
-//    Executors.newFixedThreadPool(4).asCoroutineDispatcher()
-//}
+val execPool: ExecutorCoroutineDispatcher by lazy {
+    Executors.newFixedThreadPool(4).asCoroutineDispatcher()
+}
 
 fun Route.newsHandler(kodein: Kodein) {
 
@@ -62,13 +62,13 @@ fun Route.newsAdminHandler(kodein: Kodein) {
     }
 
     get<NewsGenLoc> { dto ->
-        val gen = async { generateNews(dto.count, dao) }
+        val gen = launch { generateNews(dto.count, dao) }
         call.respond(SuccessResponse("generated"))
     }
 
 }
 
-private /*suspend*/ fun generateNews(count: Int, dao: NewsDAO) /*= withContext(execPool)*/ {
+private suspend fun generateNews(count: Int, dao: NewsDAO) = withContext(execPool) {
     println("begin generate")
     (1..count).forEach {
         dao.create(News(null, Instant.now(), UUID.randomUUID().toString(), UUID.randomUUID().toString()))
